@@ -477,6 +477,12 @@ timeline.push({
             options: ['yes', 'no'],
             required: true,
             name: 'task_exposure'
+        },
+        {
+            prompt: 'If so, please elaborate',
+            options: ['I have been taught about the task, but I forgot the details', 'I have heard the name but have not learned about the task', 'I have been taught the task and know how the task works'],
+            required: false,
+            name: 'exposure_details'
         }
     ],
     data: { task: 'questionnaire', question: 'q3_6' }

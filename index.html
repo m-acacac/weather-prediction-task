@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Weather Prediction Task</title>
+    <meta charset="UTF-8">
+    
+    <!-- jsPsych -->
+    <script src="https://unpkg.com/jspsych@7.3.4"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-instructions@1.1.4"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-multi-select@1.1.3"></script>
+    <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        .card-icon-inline {
+            width: 40px;
+            height: 60px;
+            object-fit: contain;
+            vertical-align: middle;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body></body>
+<script>
+
+// ==============================================================================
+// FIREBASE CONFIGURATION
+// IMPORTANT: Replace the values below with YOUR Firebase config from Step 4
+// ==============================================================================
+
+const firebaseConfig = {
+
+  apiKey: "AIzaSyDybTzOtak37BlWGP-3uK_6Ig1HJvFbgm0",
+
+  authDomain: "weather-prediction-study.firebaseapp.com",
+
+  projectId: "weather-prediction-study",
+
+  storageBucket: "weather-prediction-study.firebasestorage.app",
+
+  messagingSenderId: "8161430272",
+
+  appId: "1:8161430272:web:ccf2cb1a9f8a51c9b601e5"
+
+};
+
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ==============================================================================
+// EXPERIMENT SETUP
+// ==============================================================================
+
+// Get participant ID from URL (for SONA integration)
+var urlParams = new URLSearchParams(window.location.search);
+var subject_id = urlParams.get('id') || 
+                 urlParams.get('survey_code') || 
+                 'TEST_' + Date.now();
+
+// SONA redirect URL (update this later when you have it)
+var SONA_REDIRECT_URL = 'https://ucsd.sona-systems.com/webstudy_credit.aspx?experiment_id=XXX&credit_token=XXX&survey_code=' + subject_id;
+
+// Initialize jsPsych
+var jsPsych = initJsPsych({
+    show_progress_bar: true,
+    on_finish: function() {
+        // Save to Firebase
+        var allData = jsPsych.data.get().values();
+        
+        db.collection('participants').doc(subject_id).set({
+            participant_id: subject_id,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            data: allData
+        })
+        .then(function() {
+            console.log("✓ Data saved to Firebase successfully!");
+            
+            // Also save backup CSV
+            var timestamp = new Date().toISOString().slice(0,10);
+            jsPsych.data.get().localSave('csv', 'weather-prediction-' + subject_id + '-' + timestamp + '.csv');
+            
+            // Uncomment these 3 lines when you're ready to redirect to SONA:
+            // setTimeout(function() {
+            //     window.location = SONA_REDIRECT_URL;
+            // }, 2000);
+        })
+        .catch(function(error) {
+            console.error("✗ Error saving to Firebase:", error);
+            alert("Error saving data. Please contact the researcher.");
+        });
+    }
+});
+
+// Add participant ID to all data
+jsPsych.data.addProperties({
+    participant_id: subject_id
+});
+
+// ==============================================================================
+// STIMULI
+// ==============================================================================
+
+// Card images
+var cardImages = {
+    1: 'triangle.png',
+    2: 'circle.png',
+    3: 'diamond.png',
+    4: 'square.png'
+};
+
+// Trial structure (Table 5 from Gluck et al. 2002)
+var trialStructure = [
+    ['A', [4], 17, 2],      // Pattern, cards present, sun count, rain count
+    ['B', [3], 7, 2],
+    ['C', [3,4], 24, 2],
+    ['D', [2], 2, 7],
+    ['E', [2,4], 10, 2],
+    ['F', [2,3], 3, 3],
+    ['G', [2,3,4], 17, 2],
+    ['H', [1], 2, 17],
+    ['I', [1,4], 3, 3],
+    ['J', [1,3], 2, 10],
+    ['K', [1,3,4], 5, 4],
+    ['L', [1,2], 2, 24],
+    ['M', [1,2,4], 4, 5],
+    ['N', [1,2,3], 2, 17]
+];
+
+// Generate 200 trials
+function generateTrials() {
+    var allTrials = [];
+    
+    for (var t = 0; t < trialStructure.length; t++) {
+        var structure = trialStructure[t];
+        var pattern = structure[0];
+        var cards = structure[1].slice();
+        var sunCount = structure[2];
+        var rainCount = structure[3];
+        
+        for (var i = 0; i < sunCount; i++) {
+            allTrials.push({
+                pattern: pattern,
+                cards: cards.slice(),
+                correctOutcome: 'sun'
+            });
+        }
+        
+        for (var i = 0; i < rainCount; i++) {
+            allTrials.push({
+                pattern: pattern,
+                cards: cards.slice(),
+                correctOutcome: 'rain'
+            });
+        }
+    }
+    
+    return jsPsych.randomization.shuffle(allTrials);
+}
+
+var trials = generateTrials();
+
+// ==============================================================================
+// INSTRUCTIONS
+// ==============================================================================
+
+var instructions = {
+    type: jsPsychInstructions,
+    pages: [
+        '<p style="font-size: 20px;">Welcome to the Weather Prediction Task!</p>' +
+        '<p>You will see tarot cards and predict whether it will be sunny or rainy.</p>' +
+        '<p>After each prediction, you\'ll see the correct weather.</p>' +
+        '<p>Try to learn which cards predict which weather.</p>',
+        
+        '<p style="font-size: 20px;">How to respond:</p>' +
+        '<p>Press <strong>F</strong> to predict RAINY weather</p>' +
+        '<p>Press <strong>J</strong> to predict SUNNY weather</p>' +
+        '<p>Please respond as quickly and accurately as possible.</p>',
+        
+        '<p style="font-size: 20px;">About the task:</p>' +
+        '<p>There will be 200 trials total.</p>' +
+        '<p>You will get short breaks after every 50 trials.</p>' +
+        '<p>A progress bar at the top will show your progress.</p>' +
+        '<p>Click "Next" when you are ready to begin!</p>'
+    ],
+    show_clickable_nav: true
+};
+
+// ==============================================================================
+// BUILD TIMELINE
+// ==============================================================================
+
+var timeline = [];
+timeline.push(instructions);
+
+// Add all 200 trials
+for (var idx = 0; idx < trials.length; idx++) {
+    (function(index) {
+        var trial = trials[index];
+        
+        // Add break every 50 trials
+        if (index > 0 && index % 50 === 0 && index < 200) {
+            timeline.push({
+                type: jsPsychHtmlButtonResponse,
+                stimulus: '<div style="text-align: center; padding: 40px;">' +
+                          '<h2 style="font-size: 28px;">Take a Break!</h2>' +
+                          '<p style="font-size: 20px;">You have completed ' + index + ' out of 200 trials.</p>' +
+                          '<p style="font-size: 20px;">Take as much time as you need.</p>' +
+                          '</div>',
+                choices: ['Continue']
+            });
+        }
+        
+        // Build trial stimulus
+        var cardsHTML = '<div style="display: flex; justify-content: center; gap: 20px; min-height: 200px; align-items: center;">';
+        for (var c = 0; c < trial.cards.length; c++) {
+            cardsHTML += '<img src="' + cardImages[trial.cards[c]] + '" style="width: 120px; height: 180px;">';
+        }
+        cardsHTML += '</div>';
+        cardsHTML += '<div style="font-size: 24px; margin-top: 30px; text-align: center; font-weight: bold;">Will it be sunny or rainy?</div>';
+        cardsHTML += '<div style="display: flex; justify-content: center; gap: 100px; margin-top: 40px;">';
+        cardsHTML += '  <div style="text-align: center;">';
+        cardsHTML += '    <img src="rain.png" style="width: 100px; height: 100px; margin-bottom: 10px;">';
+        cardsHTML += '    <div style="font-size: 18px; font-weight: bold;">Press F for Rainy</div>';
+        cardsHTML += '  </div>';
+        cardsHTML += '  <div style="text-align: center;">';
+        cardsHTML += '    <img src="sun.png" style="width: 100px; height: 100px; margin-bottom: 10px;">';
+        cardsHTML += '    <div style="font-size: 18px; font-weight: bold;">Press J for Sunny</div>';
+        cardsHTML += '  </div>';
+        cardsHTML += '</div>';
+        
+        // Response trial (5 seconds total)
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: cardsHTML,
+            choices: ['f', 'j'],
+            trial_duration: 5000,
+            data: {
+                task: 'response',
+                trial_number: index + 1,
+                block: Math.floor(index / 50) + 1,
+                pattern: trial.pattern,
+                cards_shown: trial.cards.join(','),
+                correct_outcome: trial.correctOutcome
+            },
+            on_load: function() {
+                var hasResponded = false;
+                var display = document.querySelector('#jspsych-html-keyboard-response-stimulus');
+                
+                var keyHandler = function(e) {
+                    if (e.key === 'f' || e.key === 'j' || e.key === 'F' || e.key === 'J') {
+                        hasResponded = true;
+                    }
+                };
+                document.addEventListener('keydown', keyHandler);
+                
+                // Add "Answer Now!" after 2 seconds if no response
+                setTimeout(function() {
+                    if (!hasResponded && display) {
+                        var answerNow = document.createElement('div');
+                        answerNow.style.cssText = 'color: red; font-size: 24px; margin-top: 30px; text-align: center; font-weight: bold;';
+                        answerNow.textContent = 'Answer Now!';
+                        display.appendChild(answerNow);
+                    }
+                }, 2000);
+                
+                setTimeout(function() {
+                    document.removeEventListener('keydown', keyHandler);
+                }, 5000);
+            },
+            on_finish: function(data) {
+                if (data.response !== null) {
+                    data.subject_response = data.response === 'j' ? 'sun' : 'rain';
+                    data.correct = data.subject_response === data.correct_outcome;
+                } else {
+                    data.subject_response = null;
+                    data.correct = false;
+                }
+            }
+        });
+        
+        // Feedback (2 seconds)
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: function() {
+                var allData = jsPsych.data.get().values();
+                var lastResponse = allData.filter(x => x.trial_number === index + 1 && x.task === 'response');
+                var responded = lastResponse.length > 0 && lastResponse[lastResponse.length - 1].response !== null;
+                
+                var html = '<div style="display: flex; justify-content: center; gap: 20px; min-height: 200px; align-items: center;">';
+                for (var c = 0; c < trial.cards.length; c++) {
+                    html += '<img src="' + cardImages[trial.cards[c]] + '" style="width: 120px; height: 180px;">';
+                }
+                html += '</div>';
+                html += '<div style="text-align: center; margin-top: 40px;">';
+                html += '<img src="' + trial.correctOutcome + '.png" style="width: 300px; height: 300px;">';
+                html += '</div>';
+                
+                if (!responded) {
+                    html += '<div style="color: red; font-size: 20px; margin-top: 20px; text-align: center;">Too slow!</div>';
+                }
+                
+                return html;
+            },
+            choices: "NO_KEYS",
+            trial_duration: 2000,
+            data: {
+                task: 'feedback',
+                trial_number: index + 1,
+                block: Math.floor(index / 50) + 1
+            }
+        });
+        
+        // Inter-trial interval (1 second blank)
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '',
+            choices: "NO_KEYS",
+            trial_duration: 1000,
+            data: { task: 'iti' }
+        });
+        
+    })(idx);
+}
+
+// ==============================================================================
+// POST-TASK QUESTIONNAIRE
+// ==============================================================================
+
+timeline.push({
+    type: jsPsychHtmlButtonResponse,
+    stimulus: '<div style="text-align: center; padding: 40px;">' +
+              '<h2 style="font-size: 28px;">Task Complete!</h2>' +
+              '<p style="font-size: 20px;">Great job! Now we have a few questions.</p>' +
+              '</div>',
+    choices: ['Continue']
+});
+
+// Q1: If sunny, which cards?
+timeline.push({
+    type: jsPsychSurveyMultiSelect,
+    questions: [{
+        prompt: 'If the weather is <strong>sunny</strong>, what card is most likely to be present?',
+        options: [
+            '<img src="square.png" class="card-icon-inline"> Squares',
+            '<img src="circle.png" class="card-icon-inline"> Circles',
+            '<img src="triangle.png" class="card-icon-inline"> Triangles',
+            '<img src="diamond.png" class="card-icon-inline"> Diamonds'
+        ],
+        required: true,
+        name: 'sunny_cards'
+    }],
+    data: { task: 'questionnaire', question: 'q1' }
+});
+
+// Q2: If rainy, which cards?
+timeline.push({
+    type: jsPsychSurveyMultiSelect,
+    questions: [{
+        prompt: 'If the weather is <strong>rainy</strong>, what card is most likely to be present?',
+        options: [
+            '<img src="square.png" class="card-icon-inline"> Squares',
+            '<img src="circle.png" class="card-icon-inline"> Circles',
+            '<img src="triangle.png" class="card-icon-inline"> Triangles',
+            '<img src="diamond.png" class="card-icon-inline"> Diamonds'
+        ],
+        required: true,
+        name: 'rainy_cards'
+    }],
+    data: { task: 'questionnaire', question: 'q2' }
+});
+
+// Q3-6: Card to weather
+timeline.push({
+    type: jsPsychSurveyMultiChoice,
+    questions: [
+        {
+            prompt: 'If <img src="square.png" class="card-icon-inline"> <strong>squares</strong> are present, what weather is most likely?',
+            options: ['Sunny', 'Rainy'],
+            required: true,
+            name: 'square_weather'
+        },
+        {
+            prompt: 'If <img src="circle.png" class="card-icon-inline"> <strong>circles</strong> are present, what weather is most likely?',
+            options: ['Sunny', 'Rainy'],
+            required: true,
+            name: 'circle_weather'
+        },
+        {
+            prompt: 'If <img src="triangle.png" class="card-icon-inline"> <strong>triangles</strong> are present, what weather is most likely?',
+            options: ['Sunny', 'Rainy'],
+            required: true,
+            name: 'triangle_weather'
+        },
+        {
+            prompt: 'If <img src="diamond.png" class="card-icon-inline"> <strong>diamonds</strong> are present, what weather is most likely?',
+            options: ['Sunny', 'Rainy'],
+            required: true,
+            name: 'diamond_weather'
+        }
+    ],
+    data: { task: 'questionnaire', question: 'q3_6' }
+});
+
+// Q7: Ranking
+timeline.push({
+    type: jsPsychSurveyText,
+    preamble: '<p>Rank these cards from <strong>most sunny</strong> (1) to <strong>least sunny</strong> (4):</p>',
+    questions: [
+        { prompt: '<img src="square.png" class="card-icon-inline"> Squares:', name: 'rank_squares', required: true, placeholder: '1' },
+        { prompt: '<img src="circle.png" class="card-icon-inline"> Circles:', name: 'rank_circles', required: true, placeholder: '2' },
+        { prompt: '<img src="triangle.png" class="card-icon-inline"> Triangles:', name: 'rank_triangles', required: true, placeholder: '3' },
+        { prompt: '<img src="diamond.png" class="card-icon-inline"> Diamonds:', name: 'rank_diamonds', required: true, placeholder: '4' }
+    ],
+    data: { task: 'questionnaire', question: 'q7' }
+});
+
+// Q8: Probabilities
+timeline.push({
+    type: jsPsychSurveyText,
+    preamble: '<p>What do you think the probability of sun is for each card? (0-100%)</p>',
+    questions: [
+        { prompt: '<img src="square.png" class="card-icon-inline"> Squares:', name: 'prob_squares', required: true, placeholder: '75' },
+        { prompt: '<img src="circle.png" class="card-icon-inline"> Circles:', name: 'prob_circles', required: true, placeholder: '50' },
+        { prompt: '<img src="triangle.png" class="card-icon-inline"> Triangles:', name: 'prob_triangles', required: true, placeholder: '25' },
+        { prompt: '<img src="diamond.png" class="card-icon-inline"> Diamonds:', name: 'prob_diamonds', required: true, placeholder: '60' }
+    ],
+    data: { task: 'questionnaire', question: 'q8' }
+});
+
+// ==============================================================================
+// DEMOGRAPHICS
+// ==============================================================================
+
+timeline.push({
+    type: jsPsychSurveyText,
+    questions: [{ prompt: 'What is your age?', name: 'age', required: true }],
+    data: { task: 'demographics' }
+});
+
+timeline.push({
+    type: jsPsychSurveyMultiChoice,
+    questions: [
+        {
+            prompt: 'Highest level of education?',
+            options: ['Less than high school', 'High school diploma/GED', 'Some college', "Associate's", "Bachelor's", "Master's", 'Doctoral', 'Professional degree'],
+            required: true,
+            name: 'education'
+        },
+        {
+            prompt: 'Sex assigned at birth?',
+            options: ['Male', 'Female', 'Intersex'],
+            required: true,
+            name: 'sex'
+        },
+        {
+            prompt: 'Autism diagnosis status?',
+            options: ['Diagnosed by provider', 'Self-diagnosed', 'Not diagnosed'],
+            required: true,
+            name: 'autism'
+        }
+    ],
+    data: { task: 'demographics' }
+});
+
+// Final screen
+timeline.push({
+    type: jsPsychHtmlButtonResponse,
+    stimulus: '<div style="text-align: center; padding: 40px;">' +
+              '<h2>Study Complete!</h2>' +
+              '<p>Thank you for participating!</p>' +
+              '<p>Your data has been saved.</p>' +
+              '</div>',
+    choices: ['Finish']
+});
+
+// ==============================================================================
+// RUN EXPERIMENT
+// ==============================================================================
+
+jsPsych.run(timeline);
+
+</script>
+</html>

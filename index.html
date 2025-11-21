@@ -353,7 +353,7 @@ timeline.push({
 timeline.push({
     type: jsPsychSurveyMultiSelect,
     questions: [{
-        prompt: 'If the weather is <strong>sunny</strong>, what card is most likely to be present?',
+        prompt: 'If the weather is <strong>sunny</strong>, what card(s) is most likely to be present?',
         options: [
             '<img src="square.png" class="card-icon-inline"> Squares',
             '<img src="circle.png" class="card-icon-inline"> Circles',
@@ -370,7 +370,7 @@ timeline.push({
 timeline.push({
     type: jsPsychSurveyMultiSelect,
     questions: [{
-        prompt: 'If the weather is <strong>rainy</strong>, what card is most likely to be present?',
+        prompt: 'If the weather is <strong>rainy</strong>, what card(s) is most likely to be present?',
         options: [
             '<img src="square.png" class="card-icon-inline"> Squares',
             '<img src="circle.png" class="card-icon-inline"> Circles',
@@ -388,25 +388,25 @@ timeline.push({
     type: jsPsychSurveyMultiChoice,
     questions: [
         {
-            prompt: 'If <img src="square.png" class="card-icon-inline"> <strong>squares</strong> are present, what weather is most likely?',
+            prompt: 'If <img src="square.png" class="card-icon-inline"> is present, what weather is most likely?',
             options: ['Sunny', 'Rainy'],
             required: true,
             name: 'square_weather'
         },
         {
-            prompt: 'If <img src="circle.png" class="card-icon-inline"> <strong>circles</strong> are present, what weather is most likely?',
+            prompt: 'If <img src="circle.png" class="card-icon-inline"> is present, what weather is most likely?',
             options: ['Sunny', 'Rainy'],
             required: true,
             name: 'circle_weather'
         },
         {
-            prompt: 'If <img src="triangle.png" class="card-icon-inline"> <strong>triangles</strong> are present, what weather is most likely?',
+            prompt: 'If <img src="triangle.png" class="card-icon-inline"> is present, what weather is most likely?',
             options: ['Sunny', 'Rainy'],
             required: true,
             name: 'triangle_weather'
         },
         {
-            prompt: 'If <img src="diamond.png" class="card-icon-inline"> <strong>diamonds</strong> are present, what weather is most likely?',
+            prompt: 'If <img src="diamond.png" class="card-icon-inline"> is present, what weather is most likely?',
             options: ['Sunny', 'Rainy'],
             required: true,
             name: 'diamond_weather'

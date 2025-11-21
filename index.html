@@ -72,7 +72,7 @@ var subject_id = urlParams.get('id') ||
                  'TEST_' + Date.now();
 
 // SONA redirect URL (update this later when you have it)
-var SONA_REDIRECT_URL = 'https://ucsd.sona-systems.com/webstudy_credit.aspx?experiment_id=XXX&credit_token=XXX&survey_code=' + subject_id;
+var SONA_REDIRECT_URL = 'https://ucsd.sona-systems.com/webstudy_credit.aspx?experiment_id=3010&credit_token=2e8c024ee0554bf48148479aa54fffea&survey_code=' + subject_id;
 
 // Initialize jsPsych
 var jsPsych = initJsPsych({
@@ -94,9 +94,9 @@ var jsPsych = initJsPsych({
             jsPsych.data.get().localSave('csv', 'weather-prediction-' + subject_id + '-' + timestamp + '.csv');
             
             // Uncomment these 3 lines when you're ready to redirect to SONA:
-            // setTimeout(function() {
-            //     window.location = SONA_REDIRECT_URL;
-            // }, 2000);
+            setTimeout(function() {
+            window.location = SONA_REDIRECT_URL;
+            }, 2000);
         })
         .catch(function(error) {
             console.error("✗ Error saving to Firebase:", error);

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Download Study Data</title>
+    <meta charset="UTF-8">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        #participant-list {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Download Weather Prediction Study Data</h1>
+    
+    <div>
+        <button onclick="downloadAllCSV()">Download All Data as CSV</button>
+        <button onclick="downloadAllJSON()">Download All Data as JSON</button>
+        <button onclick="listParticipants()">Show Participant List</button>
+    </div>
+    
+    <div id="status"></div>
+    <div id="participant-list"></div>
+
+    <script>
+        // PASTE YOUR FIREBASE CONFIG HERE (same as in index.html)
+       const firebaseConfig = {
+
+  apiKey: "AIzaSyDybTzOtak37BlWGP-3uK_6Ig1HJvFbgm0",
+
+  authDomain: "weather-prediction-study.firebaseapp.com",
+
+  projectId: "weather-prediction-study",
+
+  storageBucket: "weather-prediction-study.firebasestorage.app",
+
+  messagingSenderId: "8161430272",
+
+  appId: "1:8161430272:web:ccf2cb1a9f8a51c9b601e5"
+
+};
+
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = type;
+        }
+        
+        async function downloadAllCSV() {
+            showStatus('Fetching data from Firebase...', 'info');
+            
+            try {
+                const snapshot = await db.collection('participants').get();
+                
+                if (snapshot.empty) {
+                    showStatus('No data found in Firebase!', 'error');
+                    return;
+                }
+                
+                // Collect all trial data across all participants
+                const allRows = [];
+                const headers = new Set();
+                
+                snapshot.forEach(doc => {
+                    const participantData = doc.data();
+                    const participantId = doc.id;
+                    const trialData = participantData.data || [];
+                    
+                    trialData.forEach(trial => {
+                        // Collect all possible column names
+                        Object.keys(trial).forEach(key => headers.add(key));
+                        allRows.push(trial);
+                    });
+                });
+                
+                // Convert to CSV
+                const headerArray = Array.from(headers);
+                let csv = headerArray.join(',') + '\n';
+                
+                allRows.forEach(row => {
+                    const values = headerArray.map(header => {
+                        let value = row[header];
+                        
+                        // Handle different data types
+                        if (value === null || value === undefined) {
+                            return '';
+                        }
+                        if (typeof value === 'object') {
+                            value = JSON.stringify(value);
+                        }
+                        
+                        // Escape quotes and wrap in quotes if contains comma
+                        value = String(value).replace(/"/g, '""');
+                        if (value.includes(',') || value.includes('\n') || value.includes('"')) {
+                            value = '"' + value + '"';
+                        }
+                        
+                        return value;
+                    });
+                    csv += values.join(',') + '\n';
+                });
+                
+                // Download the CSV
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'weather-prediction-data-' + new Date().toISOString().slice(0,10) + '.csv';
+                link.click();
+                
+                showStatus('✓ Downloaded CSV with ' + allRows.length + ' rows from ' + snapshot.size + ' participants!', 'success');
+                
+            } catch (error) {
+                showStatus('✗ Error: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+        
+        async function downloadAllJSON() {
+            showStatus('Fetching data from Firebase...', 'info');
+            
+            try {
+                const snapshot = await db.collection('participants').get();
+                
+                if (snapshot.empty) {
+                    showStatus('No data found in Firebase!', 'error');
+                    return;
+                }
+                
+                const allData = [];
+                
+                snapshot.forEach(doc => {
+                    allData.push({
+                        participant_id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                // Download as JSON
+                const dataStr = JSON.stringify(allData, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'weather-prediction-data-' + new Date().toISOString().slice(0,10) + '.json';
+                link.click();
+                
+                showStatus('✓ Downloaded JSON with data from ' + snapshot.size + ' participants!', 'success');
+                
+            } catch (error) {
+                showStatus('✗ Error: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+        
+        async function listParticipants() {
+            showStatus('Fetching participant list...', 'info');
+            
+            try {
+                const snapshot = await db.collection('participants').get();
+                
+                if (snapshot.empty) {
+                    showStatus('No participants found in Firebase!', 'error');
+                    return;
+                }
+                
+                let listHTML = '<h3>Participants (' + snapshot.size + ' total):</h3><ul>';
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const timestamp = data.timestamp ? data.timestamp.toDate().toLocaleString() : 'No timestamp';
+                    const trialCount = data.data ? data.data.length : 0;
+                    listHTML += '<li><strong>' + doc.id + '</strong> - ' + timestamp + ' (' + trialCount + ' trials)</li>';
+                });
+                
+                listHTML += '</ul>';
+                
+                document.getElementById('participant-list').innerHTML = listHTML;
+                showStatus('✓ Participant list loaded!', 'success');
+                
+            } catch (error) {
+                showStatus('✗ Error: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

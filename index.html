@@ -433,10 +433,10 @@ timeline.push({
     type: jsPsychSurveyText,
     preamble: '<p>What do you think the probability of sun is for each card? (0-100%)</p>',
     questions: [
-        { prompt: '<img src="square.png" class="card-icon-inline"> Squares:', name: 'prob_squares', required: true, placeholder: '75' },
-        { prompt: '<img src="circle.png" class="card-icon-inline"> Circles:', name: 'prob_circles', required: true, placeholder: '50' },
-        { prompt: '<img src="triangle.png" class="card-icon-inline"> Triangles:', name: 'prob_triangles', required: true, placeholder: '25' },
-        { prompt: '<img src="diamond.png" class="card-icon-inline"> Diamonds:', name: 'prob_diamonds', required: true, placeholder: '60' }
+        { prompt: '<img src="square.png" class="card-icon-inline"> Squares:', name: 'prob_squares', required: true, placeholder: '%' },
+        { prompt: '<img src="circle.png" class="card-icon-inline"> Circles:', name: 'prob_circles', required: true, placeholder: '%' },
+        { prompt: '<img src="triangle.png" class="card-icon-inline"> Triangles:', name: 'prob_triangles', required: true, placeholder: '%' },
+        { prompt: '<img src="diamond.png" class="card-icon-inline"> Diamonds:', name: 'prob_diamonds', required: true, placeholder: '%' }
     ],
     data: { task: 'questionnaire', question: 'q8' }
 });
@@ -474,7 +474,7 @@ timeline.push({
         },
          {
             prompt: 'Have you heard of the Weather Prediction Task before?',
-            options: ['yes', 'no'],
+            options: ['Yes', 'No'],
             required: true,
             name: 'task_exposure'
         },
@@ -494,7 +494,7 @@ timeline.push({
     stimulus: '<div style="text-align: center; padding: 40px;">' +
               '<h2>Study Complete!</h2>' +
               '<p>Thank you for participating!</p>' +
-              '<p>Your data has been saved.</p>' +
+              '<p>Your SONA credit will apply automatically.</p>' +
               '</div>',
     choices: ['Finish']
 });

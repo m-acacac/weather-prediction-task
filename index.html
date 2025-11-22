@@ -10,7 +10,7 @@
     <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.3"></script>
     <script src="https://unpkg.com/@jspsych/plugin-instructions@1.1.4"></script>
     <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.1.3"></script>
-    <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@1.0.3"></script>
     <script src="https://unpkg.com/@jspsych/plugin-survey-multi-select@1.1.3"></script>
     <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
     
@@ -30,6 +30,109 @@
             vertical-align: middle;
             margin: 0 5px;
         }
+        
+        /* Consent form styling */
+        .consent-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            text-align: left;
+        }
+        .consent-content {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .consent-content h3 {
+            color: #003f87;
+            margin-top: 20px;
+        }
+        .consent-content ul {
+            padding-left: 25px;
+        }
+        .consent-checkbox {
+            margin: 20px 0;
+            font-size: 16px;
+        }
+        .consent-checkbox input {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        
+        /* Slider styling */
+        .slider-container {
+            margin: 20px 0;
+        }
+        .slider-label {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            margin: 10px 0;
+        }
+        .slider-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #003f87;
+            text-align: center;
+            margin-top: 5px;
+        }
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        /* Drag-and-drop ranking styling */
+        .ranking-container {
+            max-width: 500px;
+            margin: 30px auto;
+        }
+        .ranking-instructions {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .ranking-list {
+            list-style: none;
+            padding: 0;
+        }
+        .ranking-item {
+            background: white;
+            border: 2px solid #003f87;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+        .ranking-item:hover {
+            background: #f0f8ff;
+            transform: scale(1.02);
+        }
+        .ranking-item.dragging {
+            opacity: 0.5;
+        }
+        .drag-handle {
+            margin-right: 15px;
+            font-size: 24px;
+            color: #666;
+        }
+        .ranking-position {
+            margin-right: 15px;
+            font-weight: bold;
+            color: #003f87;
+            font-size: 20px;
+        }
     </style>
 </head>
 <body></body>
@@ -37,7 +140,7 @@
 
 // ==============================================================================
 // FIREBASE CONFIGURATION
-// IMPORTANT: Replace the values below with YOUR Firebase config from Step 4
+// IMPORTANT: Replace with YOUR Firebase config
 // ==============================================================================
 
 const firebaseConfig = {
@@ -57,7 +160,6 @@ const firebaseConfig = {
 };
 
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -65,20 +167,16 @@ const db = firebase.firestore();
 // EXPERIMENT SETUP
 // ==============================================================================
 
-// Get participant ID from URL (for SONA integration)
 var urlParams = new URLSearchParams(window.location.search);
 var subject_id = urlParams.get('id') || 
                  urlParams.get('survey_code') || 
                  'TEST_' + Date.now();
 
-// SONA redirect URL (update this later when you have it)
 var SONA_REDIRECT_URL = 'https://ucsd.sona-systems.com/webstudy_credit.aspx?experiment_id=3010&credit_token=2e8c024ee0554bf48148479aa54fffea&survey_code=' + subject_id;
 
-// Initialize jsPsych
 var jsPsych = initJsPsych({
     show_progress_bar: true,
     on_finish: function() {
-        // Save to Firebase
         var allData = jsPsych.data.get().values();
         
         db.collection('participants').doc(subject_id).set({
@@ -88,12 +186,10 @@ var jsPsych = initJsPsych({
         })
         .then(function() {
             console.log("✓ Data saved to Firebase successfully!");
-            
-            // Also save backup CSV
             var timestamp = new Date().toISOString().slice(0,10);
             jsPsych.data.get().localSave('csv', 'weather-prediction-' + subject_id + '-' + timestamp + '.csv');
             
-            // Uncomment these 3 lines when you're ready to redirect to SONA:
+            // Uncomment when ready for SONA:
             setTimeout(function() {
             window.location = SONA_REDIRECT_URL;
             }, 2000);
@@ -105,7 +201,6 @@ var jsPsych = initJsPsych({
     }
 });
 
-// Add participant ID to all data
 jsPsych.data.addProperties({
     participant_id: subject_id
 });
@@ -114,7 +209,6 @@ jsPsych.data.addProperties({
 // STIMULI
 // ==============================================================================
 
-// Card images
 var cardImages = {
     1: 'triangle.png',
     2: 'circle.png',
@@ -122,9 +216,8 @@ var cardImages = {
     4: 'square.png'
 };
 
-// Trial structure (Table 5 from Gluck et al. 2002)
 var trialStructure = [
-    ['A', [4], 17, 2],      // Pattern, cards present, sun count, rain count
+    ['A', [4], 17, 2],
     ['B', [3], 7, 2],
     ['C', [3,4], 24, 2],
     ['D', [2], 2, 7],
@@ -140,10 +233,8 @@ var trialStructure = [
     ['N', [1,2,3], 2, 17]
 ];
 
-// Generate 200 trials
 function generateTrials() {
     var allTrials = [];
-    
     for (var t = 0; t < trialStructure.length; t++) {
         var structure = trialStructure[t];
         var pattern = structure[0];
@@ -158,7 +249,6 @@ function generateTrials() {
                 correctOutcome: 'sun'
             });
         }
-        
         for (var i = 0; i < rainCount; i++) {
             allTrials.push({
                 pattern: pattern,
@@ -167,11 +257,133 @@ function generateTrials() {
             });
         }
     }
-    
     return jsPsych.randomization.shuffle(allTrials);
 }
 
 var trials = generateTrials();
+
+// ==============================================================================
+// CONSENT FORM
+// ==============================================================================
+
+var consent = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: function() {
+        return '<div class="consent-container">' +
+            '<h2 style="color: #003f87; text-align: center;">UNIVERSITY OF CALIFORNIA, SAN DIEGO<br>CONSENT TO PARTICIPATE IN RESEARCH</h2>' +
+            '<div class="consent-content">' +
+            '<h3>1. Study Title and Number</h3>' +
+            '<p><strong>Title:</strong> Implicit Prediction in Autistic Adults<br><strong>Study #:</strong> 813724</p>' +
+            
+            '<h3>2. Principal Investigator</h3>' +
+            '<p>Leslie Carver, Provost, Professor, Thurgood Marshall College</p>' +
+            
+            '<h3>3. Contact Information</h3>' +
+            '<p>PI phone number: 858-757-4513</p>' +
+            
+            '<h3>5. Study Overview</h3>' +
+            '<p>This research study is being conducted to understand how autistic and neurotypical adults learn to respond to implicit predictive cues.</p>' +
+            '<p>We are inviting you to participate in a research study because you are an autistic or neurotypical adult (over the age of 18).</p>' +
+            '<p><strong>This form explains the research so that you may make an informed decision about participating.</strong></p>' +
+            '<ul>' +
+            '<li>Research is voluntary - whether or not you participate is your decision.</li>' +
+            '<li>You can say yes, but change your mind later.</li>' +
+            '<li>If you say no, we will not hold your decision against you.</li>' +
+            '<li>Your decision will not affect your health care or other benefits you may be entitled to.</li>' +
+            '<li>Please ask the study team questions about anything that is not clear.</li>' +
+            '<li>You will be given a copy of this consent form and the Participant\'s Bill of Rights.</li>' +
+            '</ul>' +
+            '<p><strong>Purpose:</strong> To understand how autistic and neurotypical adults make predictive decisions.</p>' +
+            '<p><strong>Common risks:</strong> Boredom and fatigue. The most serious risk is loss of confidentiality.</p>' +
+            '<p><strong>Benefits:</strong> No direct benefits to you. Possible benefits to others include obtaining greater knowledge about autism and informing better interventions.</p>' +
+            
+            '<h3>6. Whom can I talk to if I have questions?</h3>' +
+            '<p>If you have questions or concerns during your participation, contact the research team at 858-757-4513.</p>' +
+            '<p>If you have questions about your rights as a research participant, contact:</p>' +
+            '<ul><li>UC San Diego Office of IRB Administration at 858-246-4777 or irb@ucsd.edu</li></ul>' +
+            
+            '<h3>7. How many people will take part?</h3>' +
+            '<p>The research will include 120 participants.</p>' +
+            
+            '<h3>8. What happens if I take part in the research?</h3>' +
+            '<p>You will complete a task on the computer where you will be asked to make predictions based on some cues. You will then answer questions about your language development, autism diagnosis (if applicable), and general demographic information (age, sex, etc). This study will take place online remotely.</p>' +
+            
+            '<h3>9. What are the risks and possible discomforts?</h3>' +
+            '<p>Participation in this study may involve:</p>' +
+            '<ul>' +
+            '<li>Boredom</li>' +
+            '<li>Being recorded</li>' +
+            '<li>Loss of confidential information</li>' +
+            '<li>Collection of sensitive information</li>' +
+            '</ul>' +
+            '<p><strong>Risks of Loss of Confidential Information:</strong> There is a risk that information about you could be released to an unauthorized party. To minimize this risk, we will deidentify data and store it on locked devices. Only necessary members of the research team who are trained on confidentiality will have access to the data.</p>' +
+            '<p><strong>Risks of Collection of Sensitive Information:</strong> Some of the information we will ask you to provide is personal. You may feel embarrassed or stressed.</p>' +
+            '<p><strong>Possible Unknown Risks:</strong> There might be risks that we cannot predict at this time. You will be informed of any new findings that might affect your health or welfare.</p>' +
+            
+            '<h3>10. How will information about me be protected?</h3>' +
+            '<p>While we cannot guarantee complete confidentiality, we will limit access to information about you. Only people who have a need to review your information will have access.</p>' +
+            '<p>Study information will be labeled with a code instead of your name. The record linking your identifying information and the code will be kept separate from the rest of the study information.</p>' +
+            '<p>The results of this study may be published once completed. However, we will keep your name and other identifying information confidential.</p>' +
+            
+            '<h3>11. Will I need to pay to participate?</h3>' +
+            '<p>There will be no cost to you for participating in this study.</p>' +
+            
+            '<h3>12. What if I agree to participate, but change my mind later?</h3>' +
+            '<p>You can stop participating at any time for any reason, and it will not be held against you. No matter what you decide, there will be no penalty to you.</p>' +
+            
+            '<h3>13. What will happen to information collected from me?</h3>' +
+            '<p>The data we collect may be used to answer other research questions or may be shared with other investigators for other research. If we do so, we will remove all identifiable information before use or sharing.</p>' +
+            
+            '<h3>15. Will I be compensated for participating?</h3>' +
+            '<p>If you agree to participate in this research, you will receive either $10 or 1 SONA credit after completion of the whole study.</p>' +
+            
+            '<h3>16. What else is important for me to know?</h3>' +
+            '<p>You will not be provided any clinically relevant information that may pertain to your health. You will not be provided a summary of the research findings.</p>' +
+            
+            '<h3>17. What are my rights when providing electronic consent?</h3>' +
+            '<p>California law provides specific rights when you are asked to provide electronic consent:</p>' +
+            '<ul>' +
+            '<li>You have the right to obtain a copy of the consent document in a non-electronic format.</li>' +
+            '<li>You have the right to provide consent in a non-electronic format.</li>' +
+            '<li>If you change your mind about electronic consent, you have the right to request your electronic consent to be withdrawn.</li>' +
+            '</ul>' +
+            
+            '<h3>Experimental Participant\'s Bill of Rights</h3>' +
+            '<p><strong>Every individual asked to participate in a research study has the right to be:</strong></p>' +
+            '<ol>' +
+            '<li>Informed about the nature and purpose of the study.</li>' +
+            '<li>Provided an explanation of the procedures to be followed.</li>' +
+            '<li>Given a description of any side effects, discomforts, or risks.</li>' +
+            '<li>Informed about any benefits that would reasonably be expected.</li>' +
+            '<li>Informed of any alternative procedures, drugs, or devices.</li>' +
+            '<li>Told of the types of medical treatment available if complications arise.</li>' +
+            '<li>Provided an opportunity to ask questions at any time.</li>' +
+            '<li>Informed that individuals can refuse to participate. Participation is voluntary.</li>' +
+            '<li>Provided a copy of the signed and dated written consent form.</li>' +
+            '<li>Given the opportunity to freely decide whether or not to consent without any force or coercion.</li>' +
+            '</ol>' +
+            '<p style="margin-top: 20px;"><strong>Contact Information:</strong></p>' +
+            '<p>If you have concerns or questions, contact UC San Diego Office of IRB Administration at irb@ucsd.edu or 858-246-4777.</p>' +
+            '</div>' +
+            '<div class="consent-checkbox">' +
+            '<label>' +
+            '<input type="checkbox" id="consent-check" required>' +
+            '<strong>I have read the above information. I agree to participate in the research described in this form.</strong>' +
+            '</label>' +
+            '</div>' +
+            '</div>';
+    },
+    choices: ['I Agree and Consent to Participate'],
+    button_html: '<button class="jspsych-btn" id="consent-btn" style="font-size: 18px; padding: 15px 40px;" disabled>%choice%</button>',
+    on_load: function() {
+        var checkbox = document.getElementById('consent-check');
+        var button = document.getElementById('consent-btn');
+        checkbox.addEventListener('change', function() {
+            button.disabled = !this.checked;
+        });
+    },
+    data: { task: 'consent' }
+};
 
 // ==============================================================================
 // INSTRUCTIONS
@@ -180,10 +392,10 @@ var trials = generateTrials();
 var instructions = {
     type: jsPsychInstructions,
     pages: [
-        '<p style="font-size: 20px;">Welcome to the Weather Prediction Task!</p>' +
-        '<p>You will see tarot cards and predict whether it will be sunny or rainy.</p>' +
+        '<p style="font-size: 20px;">Thank you for participanting in our study!</p>' +
+        '<p>You will see cards and predict whether it will be sunny or rainy.</p>' +
         '<p>After each prediction, you\'ll see the correct weather.</p>' +
-        '<p>Try to learn which cards predict which weather.</p>',
+        '<p>You might have to guess at first, but most people become better as the task progresses.</p>',
         
         '<p style="font-size: 20px;">How to respond:</p>' +
         '<p>Press <strong>F</strong> to predict RAINY weather</p>' +
@@ -204,6 +416,7 @@ var instructions = {
 // ==============================================================================
 
 var timeline = [];
+timeline.push(consent);
 timeline.push(instructions);
 
 // Add all 200 trials
@@ -211,7 +424,6 @@ for (var idx = 0; idx < trials.length; idx++) {
     (function(index) {
         var trial = trials[index];
         
-        // Add break every 50 trials
         if (index > 0 && index % 50 === 0 && index < 200) {
             timeline.push({
                 type: jsPsychHtmlButtonResponse,
@@ -224,7 +436,6 @@ for (var idx = 0; idx < trials.length; idx++) {
             });
         }
         
-        // Build trial stimulus
         var cardsHTML = '<div style="display: flex; justify-content: center; gap: 20px; min-height: 200px; align-items: center;">';
         for (var c = 0; c < trial.cards.length; c++) {
             cardsHTML += '<img src="' + cardImages[trial.cards[c]] + '" style="width: 120px; height: 180px;">';
@@ -242,7 +453,6 @@ for (var idx = 0; idx < trials.length; idx++) {
         cardsHTML += '  </div>';
         cardsHTML += '</div>';
         
-        // Response trial (5 seconds total)
         timeline.push({
             type: jsPsychHtmlKeyboardResponse,
             stimulus: cardsHTML,
@@ -267,7 +477,6 @@ for (var idx = 0; idx < trials.length; idx++) {
                 };
                 document.addEventListener('keydown', keyHandler);
                 
-                // Add "Answer Now!" after 2 seconds if no response
                 setTimeout(function() {
                     if (!hasResponded && display) {
                         var answerNow = document.createElement('div');
@@ -292,7 +501,6 @@ for (var idx = 0; idx < trials.length; idx++) {
             }
         });
         
-        // Feedback (2 seconds)
         timeline.push({
             type: jsPsychHtmlKeyboardResponse,
             stimulus: function() {
@@ -324,7 +532,6 @@ for (var idx = 0; idx < trials.length; idx++) {
             }
         });
         
-        // Inter-trial interval (1 second blank)
         timeline.push({
             type: jsPsychHtmlKeyboardResponse,
             stimulus: '',
@@ -349,16 +556,16 @@ timeline.push({
     choices: ['Continue']
 });
 
-// Q1: If sunny, which cards?
+// Q1 & Q2: Multi-select
 timeline.push({
     type: jsPsychSurveyMultiSelect,
     questions: [{
-        prompt: 'If the weather is <strong>sunny</strong>, what card(s) is most likely to be present?',
+        prompt: 'If the weather is <strong>sunny</strong>, what card is most likely to be present?',
         options: [
-            '<img src="square.png" class="card-icon-inline"> Squares',
-            '<img src="circle.png" class="card-icon-inline"> Circles',
-            '<img src="triangle.png" class="card-icon-inline"> Triangles',
-            '<img src="diamond.png" class="card-icon-inline"> Diamonds'
+            '<img src="square.png" class="card-icon-inline"> ',
+            '<img src="circle.png" class="card-icon-inline"> ',
+            '<img src="triangle.png" class="card-icon-inline"> ',
+            '<img src="diamond.png" class="card-icon-inline"> '
         ],
         required: true,
         name: 'sunny_cards'
@@ -366,16 +573,15 @@ timeline.push({
     data: { task: 'questionnaire', question: 'q1' }
 });
 
-// Q2: If rainy, which cards?
 timeline.push({
     type: jsPsychSurveyMultiSelect,
     questions: [{
-        prompt: 'If the weather is <strong>rainy</strong>, what card(s) is most likely to be present?',
+        prompt: 'If the weather is <strong>rainy</strong>, what card is most likely to be present?',
         options: [
-            '<img src="square.png" class="card-icon-inline"> Squares',
-            '<img src="circle.png" class="card-icon-inline"> Circles',
-            '<img src="triangle.png" class="card-icon-inline"> Triangles',
-            '<img src="diamond.png" class="card-icon-inline"> Diamonds'
+            '<img src="square.png" class="card-icon-inline"> ',
+            '<img src="circle.png" class="card-icon-inline"> ',
+            '<img src="triangle.png" class="card-icon-inline"> ',
+            '<img src="diamond.png" class="card-icon-inline"> '
         ],
         required: true,
         name: 'rainy_cards'
@@ -415,30 +621,158 @@ timeline.push({
     data: { task: 'questionnaire', question: 'q3_6' }
 });
 
-// Q7: Ranking
+// Q7: Drag-and-drop ranking
 timeline.push({
-    type: jsPsychSurveyText,
-    preamble: '<p>Rank these cards from <strong>most sunny</strong> (1) to <strong>least sunny</strong> (4):</p>',
-    questions: [
-        { prompt: '<img src="square.png" class="card-icon-inline"> Squares:', name: 'rank_squares', required: true, placeholder: '1' },
-        { prompt: '<img src="circle.png" class="card-icon-inline"> Circles:', name: 'rank_circles', required: true, placeholder: '2' },
-        { prompt: '<img src="triangle.png" class="card-icon-inline"> Triangles:', name: 'rank_triangles', required: true, placeholder: '3' },
-        { prompt: '<img src="diamond.png" class="card-icon-inline"> Diamonds:', name: 'rank_diamonds', required: true, placeholder: '4' }
-    ],
-    data: { task: 'questionnaire', question: 'q7' }
+    type: jsPsychHtmlButtonResponse,
+    stimulus: function() {
+        return '<div class="ranking-container">' +
+            '<div class="ranking-instructions">' +
+            '<p style="font-size: 20px; font-weight: bold;">Rank these cards from most sunny (top) to least sunny (bottom)</p>' +
+            '<p style="font-size: 16px; color: #666;">Click and drag to reorder</p>' +
+            '</div>' +
+            '<ul class="ranking-list" id="ranking-list">' +
+            '<li class="ranking-item" draggable="true" data-card="square">' +
+            '<span class="drag-handle">≡</span>' +
+            '<span class="ranking-position">1.</span>' +
+            '<img src="square.png" class="card-icon-inline"> Squares' +
+            '</li>' +
+            '<li class="ranking-item" draggable="true" data-card="diamond">' +
+            '<span class="drag-handle">≡</span>' +
+            '<span class="ranking-position">2.</span>' +
+            '<img src="diamond.png" class="card-icon-inline"> Diamonds' +
+            '</li>' +
+            '<li class="ranking-item" draggable="true" data-card="circle">' +
+            '<span class="drag-handle">≡</span>' +
+            '<span class="ranking-position">3.</span>' +
+            '<img src="circle.png" class="card-icon-inline"> Circles' +
+            '</li>' +
+            '<li class="ranking-item" draggable="true" data-card="triangle">' +
+            '<span class="drag-handle">≡</span>' +
+            '<span class="ranking-position">4.</span>' +
+            '<img src="triangle.png" class="card-icon-inline"> Triangles' +
+            '</li>' +
+            '</ul>' +
+            '</div>';
+    },
+    choices: ['Submit Ranking'],
+    on_load: function() {
+        var draggedItem = null;
+        var list = document.getElementById('ranking-list');
+        var items = list.querySelectorAll('.ranking-item');
+        
+        items.forEach(function(item) {
+            item.addEventListener('dragstart', function() {
+                draggedItem = this;
+                setTimeout(function() {
+                    draggedItem.classList.add('dragging');
+                }, 0);
+            });
+            
+            item.addEventListener('dragend', function() {
+                this.classList.remove('dragging');
+                updatePositions();
+            });
+            
+            item.addEventListener('dragover', function(e) {
+                e.preventDefault();
+            });
+            
+            item.addEventListener('drop', function(e) {
+                e.preventDefault();
+                if (this !== draggedItem) {
+                    var allItems = Array.from(list.children);
+                    var draggedIndex = allItems.indexOf(draggedItem);
+                    var targetIndex = allItems.indexOf(this);
+                    
+                    if (draggedIndex < targetIndex) {
+                        this.parentNode.insertBefore(draggedItem, this.nextSibling);
+                    } else {
+                        this.parentNode.insertBefore(draggedItem, this);
+                    }
+                }
+            });
+        });
+        
+        function updatePositions() {
+            var items = list.querySelectorAll('.ranking-item');
+            items.forEach(function(item, index) {
+                item.querySelector('.ranking-position').textContent = (index + 1) + '.';
+            });
+        }
+    },
+    on_finish: function(data) {
+        var items = document.querySelectorAll('.ranking-item');
+        var ranking = {};
+        items.forEach(function(item, index) {
+            var card = item.getAttribute('data-card');
+            ranking['rank_' + card] = index + 1;
+        });
+        data.ranking = ranking;
+    },
+    data: { task: 'questionnaire', question: 'q7_ranking' }
 });
 
-// Q8: Probabilities
+// Q8: Probability sliders
 timeline.push({
-    type: jsPsychSurveyText,
-    preamble: '<p>What do you think the probability of sun is for each card? (0-100%)</p>',
-    questions: [
-        { prompt: '<img src="square.png" class="card-icon-inline"> Squares:', name: 'prob_squares', required: true, placeholder: '%' },
-        { prompt: '<img src="circle.png" class="card-icon-inline"> Circles:', name: 'prob_circles', required: true, placeholder: '%' },
-        { prompt: '<img src="triangle.png" class="card-icon-inline"> Triangles:', name: 'prob_triangles', required: true, placeholder: '%' },
-        { prompt: '<img src="diamond.png" class="card-icon-inline"> Diamonds:', name: 'prob_diamonds', required: true, placeholder: '%' }
-    ],
-    data: { task: 'questionnaire', question: 'q8' }
+    type: jsPsychSurveyHtmlForm,
+    preamble: '<p style="font-size: 20px; text-align: center;">What do you think the probability of sun is for each card?</p>' +
+              '<p style="font-size: 16px; text-align: center; color: #666;">Use the sliders to indicate your estimate (0-100%)</p>',
+    html: '<div class="slider-container">' +
+          '<div class="slider-label"><img src="square.png" class="card-icon-inline"> <strong>Squares</strong></div>' +
+          '<input type="range" id="prob_squares" name="prob_squares" min="0" max="100" value="50" step="1" required>' +
+          '<div class="slider-labels"><span>0%</span><span>100%</span></div>' +
+          '<div class="slider-value" id="value_squares">50%</div>' +
+          '</div>' +
+          '<div class="slider-container">' +
+          '<div class="slider-label"><img src="circle.png" class="card-icon-inline"> <strong>Circles</strong></div>' +
+          '<input type="range" id="prob_circles" name="prob_circles" min="0" max="100" value="50" step="1" required>' +
+          '<div class="slider-labels"><span>0%</span><span>100%</span></div>' +
+          '<div class="slider-value" id="value_circles">50%</div>' +
+          '</div>' +
+          '<div class="slider-container">' +
+          '<div class="slider-label"><img src="triangle.png" class="card-icon-inline"> <strong>Triangles</strong></div>' +
+          '<input type="range" id="prob_triangles" name="prob_triangles" min="0" max="100" value="50" step="1" required>' +
+          '<div class="slider-labels"><span>0%</span><span>100%</span></div>' +
+          '<div class="slider-value" id="value_triangles">50%</div>' +
+          '</div>' +
+          '<div class="slider-container">' +
+          '<div class="slider-label"><img src="diamond.png" class="card-icon-inline"> <strong>Diamonds</strong></div>' +
+          '<input type="range" id="prob_diamonds" name="prob_diamonds" min="0" max="100" value="50" step="1" required>' +
+          '<div class="slider-labels"><span>0%</span><span>100%</span></div>' +
+          '<div class="slider-value" id="value_diamonds">50%</div>' +
+          '</div>',
+    on_load: function() {
+        var sliders = ['squares', 'circles', 'triangles', 'diamonds'];
+        sliders.forEach(function(card) {
+            var slider = document.getElementById('prob_' + card);
+            var valueDisplay = document.getElementById('value_' + card);
+            slider.addEventListener('input', function() {
+                valueDisplay.textContent = this.value + '%';
+            });
+        });
+    },
+    data: { task: 'questionnaire', question: 'q8_probabilities' }
+});
+
+// Prior exposure questions
+timeline.push({
+    type: jsPsychSurveyMultiChoice,
+    questions: [{
+        prompt: 'Have you heard of or participated in the "Weather Prediction Task" before today?',
+        options: ['Yes', 'No', 'I do not know'],
+        required: true,
+        name: 'prior_exposure'
+    }],
+    data: { task: 'questionnaire', question: 'prior_exposure' }
+});
+
+timeline.push({
+    type: jsPsychSurveyHtmlForm,
+    preamble: '<p style="font-size: 18px;">Please describe any previous experience you may have had with the Weather Prediction Task or similar tasks.</p>' +
+              '<p style="font-size: 14px; color: #666;">For example: Have you completed this task before? Heard about it in a class? Read about it? Participated in a similar study?</p>' +
+              '<p style="font-size: 14px; color: #666;">If you have no prior experience, you can write "None" or "N/A".</p>',
+    html: '<textarea name="prior_experience_description" rows="5" cols="60" style="width: 100%; max-width: 600px; padding: 10px; font-size: 16px;" required></textarea>',
+    data: { task: 'questionnaire', question: 'prior_experience_description' }
 });
 
 // ==============================================================================
@@ -446,43 +780,66 @@ timeline.push({
 // ==============================================================================
 
 timeline.push({
-    type: jsPsychSurveyText,
-    questions: [{ prompt: 'What is your age?', name: 'age', required: true }],
+    type: jsPsychHtmlButtonResponse,
+    stimulus: '<div style="text-align: center; padding: 40px;">' +
+              '<p style="font-size: 20px;">Please answer a few questions about yourself, and then credit will be granted..</p>' +
+              '</div>',
+    choices: ['Continue']
+});
+
+// Age slider
+timeline.push({
+    type: jsPsychSurveyHtmlForm,
+    preamble: '<p style="font-size: 18px; text-align: center;">What is your age?</p>',
+    html: '<div class="slider-container" style="max-width: 500px; margin: 0 auto;">' +
+          '<input type="range" id="age" name="age" min="18" max="100" value="25" step="1" required>' +
+          '<div class="slider-labels"><span>18</span><span>100</span></div>' +
+          '<div class="slider-value" id="value_age">25 years old</div>' +
+          '</div>',
+    on_load: function() {
+        var slider = document.getElementById('age');
+        var valueDisplay = document.getElementById('value_age');
+        slider.addEventListener('input', function() {
+            valueDisplay.textContent = this.value + ' years old';
+        });
+    },
     data: { task: 'demographics' }
 });
 
+// Other demographics
 timeline.push({
     type: jsPsychSurveyMultiChoice,
     questions: [
         {
-            prompt: 'Highest level of education?',
-            options: ['Less than high school', 'High school diploma/GED', 'Some college', "Associate's", "Bachelor's", "Master's", 'Doctoral', 'Professional degree'],
+            prompt: 'What is your highest level of education?',
+            options: [
+                'Less than high school',
+                'High school diploma/GED',
+                'Some college (no degree)',
+                "Associate's degree",
+                "Bachelor's degree",
+                "Master's degree",
+                'Doctoral degree (PhD, EdD, etc.)',
+                'Professional degree (MD, JD, etc.)'
+            ],
             required: true,
             name: 'education'
         },
         {
-            prompt: 'Sex assigned at birth?',
+            prompt: 'What is your sex assigned at birth?',
             options: ['Male', 'Female', 'Intersex'],
             required: true,
             name: 'sex'
         },
         {
-            prompt: 'Autism diagnosis status?',
-            options: ['Diagnosed by provider', 'Self-diagnosed', 'Not diagnosed'],
+            prompt: 'Have you been diagnosed with Autism Spectrum Disorder?',
+            options: [
+                'Diagnosed by a credentialed provider',
+                'Self-diagnosed',
+                'Not diagnosed'
+            ],
             required: true,
             name: 'autism'
-        },
-         {
-            prompt: 'Have you heard of the Weather Prediction Task before?',
-            options: ['Yes', 'No'],
-            required: true,
-            name: 'task_exposure'
-        },
-        {
-            prompt: 'If so, please elaborate',
-            options: ['I have been taught about the task, but I forgot the details', 'I have heard the name but have not learned about the task', 'I have been taught the task and know how the task works'],
-            required: false,
-            name: 'exposure_details'
         }
     ],
     data: { task: 'demographics' }
@@ -494,7 +851,7 @@ timeline.push({
     stimulus: '<div style="text-align: center; padding: 40px;">' +
               '<h2>Study Complete!</h2>' +
               '<p>Thank you for participating!</p>' +
-              '<p>Your SONA credit will apply automatically.</p>' +
+              '<p>Your data has been saved. Your SONA credit should apply automatically.</p>' +
               '</div>',
     choices: ['Finish']
 });

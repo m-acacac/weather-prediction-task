@@ -826,6 +826,34 @@ timeline.push({
             name: 'education'
         },
         {
+            prompt: 'Do you identify as Hispanic or Latino',
+            options: [
+                'Yes',
+                'No'
+            ],
+            required: true,
+            name: 'hispanic?'
+        }]
+    type: jsPsychSurveyMultiSelect,
+    questions: [
+        {
+            prompt: 'How would you describe yourself?',
+            options: [
+                'American Indian or Alaska Native',
+                'Asian',
+                'Black or African American',
+                "Native Hawaiian or Other Pacific Islander",
+                "Bachelor's degree",
+                "Middle Eastern or North African",
+                'White',
+                'None of the above'
+            ],
+            required: true,
+            name: 'race'
+        }]
+    type: jsPsychSurveyMultiChoice,
+    questions: [
+        {
             prompt: 'What is your sex assigned at birth?',
             options: ['Male', 'Female', 'Intersex'],
             required: true,
@@ -834,7 +862,7 @@ timeline.push({
         {
             prompt: 'Have you been diagnosed with Autism Spectrum Disorder?',
             options: [
-                'Diagnosed by a credentialed provider',
+                'Diagnosed by a medical or educational professional',
                 'Self-diagnosed',
                 'Not diagnosed'
             ],
@@ -844,7 +872,23 @@ timeline.push({
     ],
     data: { task: 'demographics' }
 });
-
+    
+// Conditional follow-up: Type of professional (only if diagnosed by professional)
+timeline.push({
+    timeline: [{
+        type: jsPsychSurveyHtmlForm,
+        preamble: '<p style="font-size: 18px;">What type of professional diagnosed you with autism?</p>' +
+                  '<p style="font-size: 14px; color: #666;">For example: psychologist, psychiatrist, pediatrician, neurologist, school psychologist, etc.</p>',
+        html: '<input type="text" name="autism_professional_type" style="width: 100%; max-width: 500px; padding: 10px; font-size: 16px;" required placeholder="e.g., clinical psychologist">',
+        data: { task: 'demographics', question: 'autism_professional_type' }
+    }],
+    conditional_function: function() {
+        // Only show if they selected "Diagnosed by a medical or educational professional"
+        var lastResponse = jsPsych.data.get().last(1).values()[0];
+        return lastResponse.response && lastResponse.response.autism === 'Diagnosed by a medical or educational professional';
+    }
+});
+    
 // Final screen
 timeline.push({
     type: jsPsychHtmlButtonResponse,

@@ -833,11 +833,8 @@ timeline.push({
             ],
             required: true,
             name: 'hispanic?'
-        }]
-    type: jsPsychSurveyMultiSelect,
-    questions: [
-        {
-            prompt: 'How would you describe yourself?',
+        },
+        prompt: 'How would you describe yourself?',
             options: [
                 'American Indian or Alaska Native',
                 'Asian',
@@ -846,14 +843,12 @@ timeline.push({
                 "Bachelor's degree",
                 "Middle Eastern or North African",
                 'White',
+                'Multiple of the above, or Multi-Racial',
                 'None of the above'
             ],
             required: true,
             name: 'race'
-        }]
-    type: jsPsychSurveyMultiChoice,
-    questions: [
-        {
+        },
             prompt: 'What is your sex assigned at birth?',
             options: ['Male', 'Female', 'Intersex'],
             required: true,

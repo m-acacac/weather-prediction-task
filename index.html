@@ -767,13 +767,14 @@ timeline.push({
 });
 
 timeline.push({
-    type: jsPsychSurveyHtmlForm,
-    preamble: '<p style="font-size: 18px;">Please describe any previous experience you may have had with the Weather Prediction Task or similar tasks.</p>' +
-              '<p style="font-size: 14px; color: #666;">For example: Have you completed this task before? Heard about it in a class? Read about it? Participated in a similar study?</p>' +
-    html: '<textarea name="prior_experience_description" rows="5" cols="60" style="width: 100%; max-width: 600px; padding: 10px; font-size: 16px;" required></textarea>',
-    data: { task: 'questionnaire', question: 'prior_experience_description' },
-     conditional_function: function() {
-        // Only show if they selected "Diagnosed by a medical or educational professional"
+    timeline: [{
+        type: jsPsychSurveyHtmlForm,
+        preamble: '<p style="font-size: 18px;">Please describe any previous experience you may have had with the Weather Prediction Task or similar tasks.</p>' +
+                  '<p style="font-size: 14px; color: #666;">For example: Have you completed this task before? Heard about it in a class? Read about it? Participated in a similar study?</p>',
+        html: '<textarea name="prior_experience_description" rows="5" cols="60" style="width: 100%; max-width: 600px; padding: 10px; font-size: 16px;" required></textarea>',
+        data: { task: 'questionnaire', question: 'prior_experience_description' }
+    }],
+    conditional_function: function() {
         var lastResponse = jsPsych.data.get().last(1).values()[0];
         return lastResponse.response && lastResponse.response.prior_exposure === 'Yes';
     }

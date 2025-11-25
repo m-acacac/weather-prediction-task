@@ -784,15 +784,14 @@ timeline.push({
 // DEMOGRAPHICS
 // ==============================================================================
 
-
 // Age slider
 timeline.push({
     type: jsPsychSurveyHtmlForm,
     preamble: '<p style="font-size: 18px; text-align: center;">What is your age?</p>',
     html: '<div class="slider-container" style="max-width: 500px; margin: 0 auto;">' +
           '<input type="range" id="age" name="age" min="18" max="100" value="25" step="1" required>' +
-          '<div class="slider-labels"><span>18</span><span>80</span></div>' +
-          '<div class="slider-value" id="value_age">50 years old</div>' +
+          '<div class="slider-labels"><span>18</span><span>100</span></div>' +
+          '<div class="slider-value" id="value_age">25 years old</div>' +
           '</div>',
     on_load: function() {
         var slider = document.getElementById('age');
@@ -832,7 +831,7 @@ timeline.push({
             required: true,
             name: 'hispanic'
         },
-        {  // ← Added this opening brace
+        {
             prompt: 'How would you describe yourself?',
             options: [
                 'American Indian or Alaska Native',
@@ -866,7 +865,8 @@ timeline.push({
     ],
     data: { task: 'demographics' }
 });
-    // Conditional follow-up: Type of professional (only if diagnosed by professional)
+
+// Conditional follow-up: Type of professional
 timeline.push({
     timeline: [{
         type: jsPsychSurveyHtmlForm,
@@ -876,7 +876,6 @@ timeline.push({
         data: { task: 'demographics', question: 'autism_professional_type' }
     }],
     conditional_function: function() {
-        // Only show if they selected "Diagnosed by a medical or educational professional"
         var lastResponse = jsPsych.data.get().last(1).values()[0];
         return lastResponse.response && lastResponse.response.autism === 'Diagnosed by a medical or educational professional';
     }
@@ -892,12 +891,3 @@ timeline.push({
               '</div>',
     choices: ['Finish']
 });
-
-// ==============================================================================
-// RUN EXPERIMENT
-// ==============================================================================
-
-jsPsych.run(timeline);
-
-</script>
-</html>

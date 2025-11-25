@@ -770,7 +770,6 @@ timeline.push({
     type: jsPsychSurveyHtmlForm,
     preamble: '<p style="font-size: 18px;">Please describe any previous experience you may have had with the Weather Prediction Task or similar tasks.</p>' +
               '<p style="font-size: 14px; color: #666;">For example: Have you completed this task before? Heard about it in a class? Read about it? Participated in a similar study?</p>' +
-              '<p style="font-size: 14px; color: #666;">If you have no prior experience, you can write "None" or "N/A".</p>',
     html: '<textarea name="prior_experience_description" rows="5" cols="60" style="width: 100%; max-width: 600px; padding: 10px; font-size: 16px;" required></textarea>',
     data: { task: 'questionnaire', question: 'prior_experience_description' },
      conditional_function: function() {
@@ -784,13 +783,6 @@ timeline.push({
 // DEMOGRAPHICS
 // ==============================================================================
 
-timeline.push({
-    type: jsPsychHtmlButtonResponse,
-    stimulus: '<div style="text-align: center; padding: 40px;">' +
-              '<p style="font-size: 20px;">Please answer a few questions about yourself, and then credit will be granted..</p>' +
-              '</div>',
-    choices: ['Continue']
-});
 
 // Age slider
 timeline.push({

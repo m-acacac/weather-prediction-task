@@ -830,23 +830,23 @@ timeline.push({
             required: true,
             name: 'education'
         },
-                {
+        {
             prompt: 'Do you identify as Hispanic or Latino?',
             options: [
                 'Yes',
                 'No'
             ],
             required: true,
-            name: 'hispanic?'
+            name: 'hispanic'
         },
-        prompt: 'How would you describe yourself?',
+        {  // ← Added this opening brace
+            prompt: 'How would you describe yourself?',
             options: [
                 'American Indian or Alaska Native',
                 'Asian',
                 'Black or African American',
-                "Native Hawaiian or Other Pacific Islander",
-                "Bachelor's degree",
-                "Middle Eastern or North African",
+                'Native Hawaiian or Other Pacific Islander',
+                'Middle Eastern or North African',
                 'White',
                 'Multiple of the above, or Multi-Racial',
                 'None of the above'

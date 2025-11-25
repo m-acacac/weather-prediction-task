@@ -772,7 +772,12 @@ timeline.push({
               '<p style="font-size: 14px; color: #666;">For example: Have you completed this task before? Heard about it in a class? Read about it? Participated in a similar study?</p>' +
               '<p style="font-size: 14px; color: #666;">If you have no prior experience, you can write "None" or "N/A".</p>',
     html: '<textarea name="prior_experience_description" rows="5" cols="60" style="width: 100%; max-width: 600px; padding: 10px; font-size: 16px;" required></textarea>',
-    data: { task: 'questionnaire', question: 'prior_experience_description' }
+    data: { task: 'questionnaire', question: 'prior_experience_description' },
+     conditional_function: function() {
+        // Only show if they selected "Diagnosed by a medical or educational professional"
+        var lastResponse = jsPsych.data.get().last(1).values()[0];
+        return lastResponse.response && lastResponse.response.prior_exposure === 'Yes';
+    }
 });
 
 // ==============================================================================
@@ -793,8 +798,8 @@ timeline.push({
     preamble: '<p style="font-size: 18px; text-align: center;">What is your age?</p>',
     html: '<div class="slider-container" style="max-width: 500px; margin: 0 auto;">' +
           '<input type="range" id="age" name="age" min="18" max="100" value="25" step="1" required>' +
-          '<div class="slider-labels"><span>18</span><span>100</span></div>' +
-          '<div class="slider-value" id="value_age">25 years old</div>' +
+          '<div class="slider-labels"><span>18</span><span>80</span></div>' +
+          '<div class="slider-value" id="value_age">50 years old</div>' +
           '</div>',
     on_load: function() {
         var slider = document.getElementById('age');
@@ -825,6 +830,30 @@ timeline.push({
             required: true,
             name: 'education'
         },
+                {
+            prompt: 'Do you identify as Hispanic or Latino?',
+            options: [
+                'Yes',
+                'No'
+            ],
+            required: true,
+            name: 'hispanic?'
+        },
+        prompt: 'How would you describe yourself?',
+            options: [
+                'American Indian or Alaska Native',
+                'Asian',
+                'Black or African American',
+                "Native Hawaiian or Other Pacific Islander",
+                "Bachelor's degree",
+                "Middle Eastern or North African",
+                'White',
+                'Multiple of the above, or Multi-Racial',
+                'None of the above'
+            ],
+            required: true,
+            name: 'race'
+        },
         {
             prompt: 'What is your sex assigned at birth?',
             options: ['Male', 'Female', 'Intersex'],
@@ -834,7 +863,7 @@ timeline.push({
         {
             prompt: 'Have you been diagnosed with Autism Spectrum Disorder?',
             options: [
-                'Diagnosed by a credentialed provider',
+                'Diagnosed by a medical or educational professional',
                 'Self-diagnosed',
                 'Not diagnosed'
             ],
@@ -849,7 +878,7 @@ timeline.push({
     timeline: [{
         type: jsPsychSurveyHtmlForm,
         preamble: '<p style="font-size: 18px;">What type of professional diagnosed you with autism?</p>' +
-                  '<p style="font-size: 14px; color: #666;">For example: psychologist, psychiatrist, pediatrician, neurologist, school psychologist, etc.</p>',
+                  '<p style="font-size: 14px; color: #666;">For example: psychologist, psychiatrist, pediatrician, neurologist, school psychologist, teacher, etc.</p>',
         html: '<input type="text" name="autism_professional_type" style="width: 100%; max-width: 500px; padding: 10px; font-size: 16px;" required placeholder="e.g., clinical psychologist">',
         data: { task: 'demographics', question: 'autism_professional_type' }
     }],

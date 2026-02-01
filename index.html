@@ -167,10 +167,23 @@ const db = firebase.firestore();
 // EXPERIMENT SETUP
 // ==============================================================================
 
+// Generate a random letter-based ID (e.g., WPT-KRD-MBX-FLQ)
+function generateLetterID() {
+    var letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // Removed I and O to avoid confusion with 1 and 0
+    var group = function() {
+        var result = '';
+        for (var i = 0; i < 3; i++) {
+            result += letters.charAt(Math.floor(Math.random() * letters.length));
+        }
+        return result;
+    };
+    return 'WPT-' + group() + '-' + group() + '-' + group();
+}
+
 var urlParams = new URLSearchParams(window.location.search);
-var subject_id = urlParams.get('id') || 
-                 urlParams.get('survey_code') || 
-                 'TEST_' + Date.now();
+var sona_id = urlParams.get('id') || urlParams.get('survey_code') || null;
+var is_sona_participant = sona_id !== null;
+var subject_id = is_sona_participant ? sona_id : generateLetterID();
 
 var SONA_REDIRECT_URL = 'https://ucsd.sona-systems.com/webstudy_credit.aspx?experiment_id=3010&credit_token=2e8c024ee0554bf48148479aa54fffea&survey_code=' + subject_id;
 
@@ -882,15 +895,80 @@ timeline.push({
 });
 
 // Final screen
-timeline.push({
-    type: jsPsychHtmlButtonResponse,
-    stimulus: '<div style="text-align: center; padding: 40px;">' +
-              '<h2>Study Complete!</h2>' +
-              '<p>Thank you for participating!</p>' +
-              '<p>Your data has been saved. Your SONA credit should apply automatically.</p>' +
-              '</div>',
-    choices: ['Finish']
-});
+// SONA participants: simple thank you, redirect for credit
+if (is_sona_participant) {
+    timeline.push({
+        type: jsPsychHtmlButtonResponse,
+        stimulus: '<div style="text-align: center; padding: 40px;">' +
+                  '<h2>Study Complete!</h2>' +
+                  '<p>Thank you for participating!</p>' +
+                  '<p>Your data has been saved.</p>' +
+                  '<p style="color: #666;">Your SONA credit will be assigned automatically.</p>' +
+                  '</div>',
+        choices: ['Finish'],
+        on_finish: function() {
+            setTimeout(function() {
+                window.location = SONA_REDIRECT_URL;
+            }, 2000);
+        }
+    });
+}
+    
+// Non-SONA participants: show completion code, redirect to Qualtrics
+if (!is_sona_participant) {
+    timeline.push({
+        type: jsPsychHtmlButtonResponse,
+        stimulus: function() {
+            var code = subject_id + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            window.completionCode = code;
+            
+            db.collection('completion_codes').doc(code).set({
+                participant_id: subject_id,
+                code: code,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            return '<div style="text-align: center; padding: 40px;">' +
+                   '<h2>Study Complete!</h2>' +
+                   '<p>Thank you for participating!</p>' +
+                   '<p style="font-size: 16px;">Your data has been saved.</p>' +
+                   '<hr style="max-width: 400px; margin: 30px auto;">' +
+                   '<p style="font-size: 16px;"><strong>Your completion code is:</strong></p>' +
+                   '<p style="font-size: 28px; font-weight: bold; color: #003f87; ' +
+                   'background: #e8f0fe; padding: 15px 30px; border-radius: 8px; ' +
+                   'display: inline-block; letter-spacing: 2px;">' + code + '</p>' +
+                   '<p style="font-size: 14px; color: #666;">Please write this down or take a screenshot.<br>' +
+                   'You will need it to receive payment.</p>' +
+                   '</div>';
+        },
+        choices: ['Continue'],
+        on_finish: function(data) {
+            data.completion_code = window.completionCode;
+        }
+    });
+
+    timeline.push({
+        type: jsPsychHtmlButtonResponse,
+        stimulus: function() {
+            return '<div style="text-align: center; padding: 40px;">' +
+                   '<h2>One More Step!</h2>' +
+                   '<p style="font-size: 18px;">Click the button below to receive payment.</p>' +
+                   '<p style="font-size: 16px; color: #666;">Your information will be carried over automatically.<br>You will only need to enter your email.</p>' +
+                   '</div>';
+        },
+        choices: ['Go to Payment Form'],
+        on_finish: function() {
+            // REPLACE YOUR_SURVEY_ID with your actual Qualtrics survey ID
+            var qualtricsURL = 'https://ucsd.qualtrics.com/jfe/form/SV_57uUFnfgt01XIuG' +
+                               '?participant_id=' + subject_id +
+                               '&completion_code=' + window.completionCode;
+            window.location = qualtricsURL;
+        }
+    });
+}
+```
+
+---
 
 // ADD THESE TWO LINES:
 jsPsych.run(timeline);

@@ -202,10 +202,11 @@ var jsPsych = initJsPsych({
             var timestamp = new Date().toISOString().slice(0,10);
             jsPsych.data.get().localSave('csv', 'weather-prediction-' + subject_id + '-' + timestamp + '.csv');
 
-            // Uncomment when ready for SONA:
-            setTimeout(function() {
-            window.location = SONA_REDIRECT_URL;
-            }, 2000);
+            if (is_sona_participant) {
+                setTimeout(function() {
+                    window.location = SONA_REDIRECT_URL;
+                }, 2000);
+            }
         })
         .catch(function(error) {
             console.error("✗ Error saving to Firebase:", error);
